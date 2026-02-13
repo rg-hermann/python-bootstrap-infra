@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # Monitorar atualizações de dependências Helm
+  - package-ecosystem: "helm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+      - "helm"
