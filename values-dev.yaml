@@ -38,6 +38,3 @@ k8s-helm-templates:
       port: 8080
     initialDelaySeconds: 5
     periodSeconds: 5
-  env:
-    - name: DEBUG
-      value: "false"
