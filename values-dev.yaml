@@ -28,13 +28,17 @@ k8s-helm-templates:
       memory: 128Mi
   livenessProbe:
     httpGet:
-      path: /actuator/health/liveness
+      path: /health
       port: 8080
     initialDelaySeconds: 10
     periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
   readinessProbe:
     httpGet:
-      path: /actuator/health/readiness
+      path: /health
       port: 8080
     initialDelaySeconds: 5
     periodSeconds: 5
+    timeoutSeconds: 5
+    failureThreshold: 3

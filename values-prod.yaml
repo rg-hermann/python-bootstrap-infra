@@ -36,7 +36,7 @@ k8s-helm-templates:
 
   livenessProbe:
     httpGet:
-      path: /actuator/health/liveness
+      path: /health
       port: 8080
     initialDelaySeconds: 15
     periodSeconds: 10
@@ -45,7 +45,7 @@ k8s-helm-templates:
 
   readinessProbe:
     httpGet:
-      path: /actuator/health/readiness
+      path: /health
       port: 8080
     initialDelaySeconds: 10
     periodSeconds: 5
