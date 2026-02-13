@@ -2,17 +2,14 @@
 
 k8s-helm-templates:
   replicaCount: 1
-
   image:
     repository: ghcr.io/rg-hermann/python-bootstrap
-    tag: latest
+    tag: fa214a47388a4d7484445dc69453abb9f1c78aee
     pullPolicy: Always
-
   service:
     type: ClusterIP
     port: 80
     targetPort: 8080
-
   ingress:
     enabled: true
     className: nginx
@@ -22,7 +19,6 @@ k8s-helm-templates:
           - path: /
             pathType: Prefix
     tls: []
-
   resources:
     limits:
       cpu: 200m
@@ -30,21 +26,18 @@ k8s-helm-templates:
     requests:
       cpu: 100m
       memory: 128Mi
-
   livenessProbe:
     httpGet:
       path: /actuator/health/liveness
       port: 8080
     initialDelaySeconds: 10
     periodSeconds: 10
-
   readinessProbe:
     httpGet:
       path: /actuator/health/readiness
       port: 8080
     initialDelaySeconds: 5
     periodSeconds: 5
-
   env:
     - name: DEBUG
       value: "false"
