@@ -1,0 +1,11 @@
+# Helm charts dependencies
+charts/*.tgz
+charts/k8s-helm-templates/
+
+# Local development
+.env
+.DS_Store
+*.swp
+
+# ArgoCD / K8s local configs
+kubeconfig.yaml
