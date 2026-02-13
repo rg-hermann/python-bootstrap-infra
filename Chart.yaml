@@ -1,0 +1,11 @@
+apiVersion: v2
+name: python-bootstrap-infra
+description: GitOps configuration for Python Bootstrap Application
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+dependencies:
+  - name: k8s-helm-templates
+    version: "0.0.2"
+    repository: "https://rg-hermann.github.io/k8s-helm-templates/"

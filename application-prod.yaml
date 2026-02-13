@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: python-bootstrap-prod
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/rg-hermann/python-bootstrap-infra.git
+    targetRevision: main
+    path: .
+    helm:
+      releaseName: python-bootstrap-prod
+      values: |
+        k8s-helm-templates:
+          replicaCount: 3
+          image:
+            repository: ghcr.io/rg-hermann/python-bootstrap
+            tag: latest
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod-apps
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

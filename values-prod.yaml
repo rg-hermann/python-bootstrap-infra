@@ -1,0 +1,57 @@
+# Valores para ambiente de PRODUÇÃO
+
+k8s-helm-templates:
+  replicaCount: 3
+
+  image:
+    repository: ghcr.io/rg-hermann/python-bootstrap
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: python-bootstrap.prod.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: python-bootstrap-tls
+        hosts:
+          - python-bootstrap.prod.local
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+  livenessProbe:
+    httpGet:
+      path: /actuator/health/liveness
+      port: 8080
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /actuator/health/readiness
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  env:
+    - name: DEBUG
+      value: "false"
