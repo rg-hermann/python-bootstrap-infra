@@ -8,16 +8,11 @@ spec:
 
   source:
     repoURL: https://github.com/rg-hermann/python-bootstrap-infra.git
-    targetRevision: main
-    path: .
+    targetRevision: HEAD
+    path: . 
     helm:
-      releaseName: python-bootstrap-dev
-      values: |
-        k8s-helm-templates:
-          replicaCount: 1
-          image:
-            repository: ghcr.io/rg-hermann/python-bootstrap
-            tag: latest
+      valueFiles:
+        - values-dev.yaml
 
   destination:
     server: https://kubernetes.default.svc
