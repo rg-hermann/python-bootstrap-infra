@@ -1,31 +1,45 @@
-# Valores para ambiente de PRODUÇÃO
+# Python Bootstrap Production Environment Values
+# This file configures the application for production deployment
 
 k8s-helm-templates:
+  # Higher replica count for production HA
   replicaCount: 3
 
+  # Image configuration
   image:
     repository: ghcr.io/rg-hermann/python-bootstrap
-    tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: IfNotPresent  # Use cached images in production
+    tag: ""  # Should be explicit version tag (e.g., v1.2.3)
 
+  # Container port
+  containerPort: 8080
+
+  # Service configuration
   service:
     type: ClusterIP
     port: 80
     targetPort: 8080
 
+  # Ingress configuration for production
   ingress:
     enabled: true
     className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+      # Add TLS and other production annotations
+      nginx.ingress.kubernetes.io/rate-limit: "100"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
     hosts:
-      - host: python-bootstrap.prod.local
+      - host: python-bootstrap.example.com
         paths:
           - path: /
             pathType: Prefix
     tls:
       - secretName: python-bootstrap-tls
         hosts:
-          - python-bootstrap.prod.local
+          - python-bootstrap.example.com
 
+  # Stricter resource limits for production
   resources:
     limits:
       cpu: 500m
@@ -34,11 +48,12 @@ k8s-helm-templates:
       cpu: 250m
       memory: 256Mi
 
+  # More stringent health check probes for production
   livenessProbe:
     httpGet:
       path: /health
       port: 8080
-    initialDelaySeconds: 15
+    initialDelaySeconds: 30
     periodSeconds: 10
     timeoutSeconds: 5
     failureThreshold: 3
@@ -47,7 +62,79 @@ k8s-helm-templates:
     httpGet:
       path: /health
       port: 8080
-    initialDelaySeconds: 10
+    initialDelaySeconds: 15
+    periodSeconds: 5
+    timeoutSeconds: 5
+    failureThreshold: 2
+
+  # Aggressive auto-scaling for production
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 75
+
+  # Pod Disruption Budget for high availability
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+
+  # Strict network policies for security
+  networkPolicy:
+    enabled: true
+
+  # Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 2000
+    seccompProfile:
+      type: RuntimeDefault
+
+  # Container security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    runAsUser: 1000
+
+  # Environment variables for the application
+  env:
+    LOG_LEVEL: "WARN"
+    APP_ENV: "production"
+    DEBUG: "false"
+
+  # ConfigMap data (non-sensitive configuration)
+  config:
+    log_level: "WARN"
+    environment: "production"
+    features:
+      debug_mode: "false"
+      verbose_logging: "false"
+
+  # Pod annotations for observability
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+
+  # Pod anti-affinity to spread pods across nodes
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - "python-bootstrap"
+            topologyKey: kubernetes.io/hostname
     periodSeconds: 5
     timeoutSeconds: 5
     failureThreshold: 3
