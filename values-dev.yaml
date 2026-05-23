@@ -1,44 +1,122 @@
-# Valores para ambiente de DESENVOLVIMENTO
+# Python Bootstrap Development Environment Values
+# This file configures the application for development deployment
 
 k8s-helm-templates:
-  replicaCount: 1
+  # Replica configuration for development
+  replicaCount: 2
+
+  # Image configuration
   image:
     repository: ghcr.io/rg-hermann/python-bootstrap
-    tag: fa214a47388a4d7484445dc69453abb9f1c78aee
-    pullPolicy: Always
+    pullPolicy: Always  # Always pull latest for dev
+    tag: ""  # Will be auto-updated by CI/CD with commit SHA or version tag
+
+  # Container port
+  containerPort: 8080
+
+  # Service configuration
   service:
     type: ClusterIP
     port: 80
     targetPort: 8080
+
+  # Ingress configuration for dev environment
   ingress:
     enabled: true
     className: nginx
+    annotations:
+      # You can add more annotations as needed
+      nginx.ingress.kubernetes.io/rewrite-target: /
     hosts:
-      - host: python-bootstrap.local
+      - host: python-bootstrap.dev.local
         paths:
           - path: /
             pathType: Prefix
     tls: []
+    # tls:
+    #   - secretName: python-bootstrap-tls
+    #     hosts:
+    #       - python-bootstrap.dev.local
+
+  # Resource limits for development
   resources:
     limits:
-      cpu: 200m
-      memory: 256Mi
+      cpu: 300m
+      memory: 384Mi
     requests:
       cpu: 100m
       memory: 128Mi
+
+  # Health check probes configuration
   livenessProbe:
     httpGet:
       path: /health
       port: 8080
-    initialDelaySeconds: 10
+    initialDelaySeconds: 30
     periodSeconds: 10
     timeoutSeconds: 5
     failureThreshold: 3
+
   readinessProbe:
     httpGet:
       path: /health
       port: 8080
-    initialDelaySeconds: 5
+    initialDelaySeconds: 10
     periodSeconds: 5
     timeoutSeconds: 5
-    failureThreshold: 3
+    failureThreshold: 2
+
+  # Auto-scaling for dev (modest)
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  # Pod Disruption Budget for availability
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+  # Network policies for security
+  networkPolicy:
+    enabled: true
+
+  # Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 2000
+    seccompProfile:
+      type: RuntimeDefault
+
+  # Container security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    runAsUser: 1000
+
+  # Environment variables for the application
+  env:
+    LOG_LEVEL: "INFO"
+    APP_ENV: "development"
+    DEBUG: "true"
+
+  # ConfigMap data (non-sensitive configuration)
+  config:
+    log_level: "INFO"
+    environment: "development"
+    features:
+      debug_mode: "true"
+      verbose_logging: "true"
+
+  # Pod annotations for observability
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"

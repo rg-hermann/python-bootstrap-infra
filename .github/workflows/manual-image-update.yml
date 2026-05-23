@@ -1,0 +1,61 @@
+name: Update Image Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (e.g., v1.2.3 or abc123)'
+        required: true
+        type: string
+      environment:
+        description: 'Environment to update'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+
+jobs:
+  update-image:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup yq
+        uses: mikefarah/yq@master
+      
+      - name: Update image tag
+        run: |
+          echo "Updating image tag in values-${{ github.event.inputs.environment }}.yaml"
+          
+          yq -i '.k8s-helm-templates.image.tag = "${{ github.event.inputs.image_tag }}"' \
+            "values-${{ github.event.inputs.environment }}.yaml"
+          
+          # Show what was changed
+          git diff "values-${{ github.event.inputs.environment }}.yaml"
+      
+      - name: Commit and push
+        run: |
+          git config user.email "github-actions@github.com"
+          git config user.name "github-actions"
+          git add "values-${{ github.event.inputs.environment }}.yaml"
+          git commit -m "chore(release): update python-bootstrap to ${{ github.event.inputs.image_tag }} in ${{ github.event.inputs.environment }}"
+          git push origin ${{ github.ref_name }}
+      
+      - name: Create Pull Request
+        if: github.ref_name != 'main'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(release): update python-bootstrap to ${{ github.event.inputs.image_tag }}"
+          title: "chore(release): update python-bootstrap to ${{ github.event.inputs.image_tag }} in ${{ github.event.inputs.environment }}"
+          body: |
+            ## Changes
+            - Updated image tag to: `${{ github.event.inputs.image_tag }}`
+            - Environment: `${{ github.event.inputs.environment }}`
+            
+            This was triggered by manual dispatch.
+          branch: "update-image-tag-${{ github.event.inputs.environment }}-${{ github.event.inputs.image_tag }}"

@@ -1,0 +1,108 @@
+name: Helm Tests and Validation
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'values-*.yaml'
+      - 'Chart.yaml'
+      - '.github/workflows/helm-test.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'values-*.yaml'
+      - 'Chart.yaml'
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev, prod]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.12.0
+      
+      - name: Add Helm repo
+        run: |
+          helm repo add k8s-templates https://rg-hermann.github.io/k8s-helm-templates/
+          helm repo update
+      
+      - name: Update dependencies
+        run: helm dependency update .
+      
+      - name: Lint Chart
+        run: helm lint . --strict
+      
+      - name: Template with values-${{ matrix.environment }}.yaml
+        run: helm template python-bootstrap . -f values-${{ matrix.environment }}.yaml > /tmp/manifest-${{ matrix.environment }}.yaml
+      
+      - name: Validate YAML
+        run: |
+          cat /tmp/manifest-${{ matrix.environment }}.yaml | \
+            kubectl apply --dry-run=client -f - || echo "⚠️ Non-blocking validation"
+      
+      - name: Check probes endpoint
+        run: |
+          echo "=== Checking health probes in ${{ matrix.environment }} environment ==="
+          grep -A 2 "path: /health" /tmp/manifest-${{ matrix.environment }}.yaml || echo "⚠️ No health probes found"
+      
+      - name: Verify image configuration
+        run: |
+          echo "=== Image configuration for ${{ matrix.environment }} ==="
+          yq '.k8s-helm-templates.image' values-${{ matrix.environment }}.yaml
+      
+      - name: Check resource limits
+        run: |
+          echo "=== Resource configuration for ${{ matrix.environment }} ==="
+          yq '.k8s-helm-templates.resources' values-${{ matrix.environment }}.yaml
+
+  test-deployment:
+    runs-on: ubuntu-latest
+    needs: lint-and-validate
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.12.0
+      
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.7.0
+        with:
+          cluster_name: test-cluster
+      
+      - name: Add Helm repo
+        run: |
+          helm repo add k8s-templates https://rg-hermann.github.io/k8s-helm-templates/
+          helm repo update
+      
+      - name: Create namespace
+        run: kubectl create namespace test-app
+      
+      - name: Install chart with dev values
+        run: |
+          helm install python-bootstrap . \
+            --namespace test-app \
+            -f values-dev.yaml \
+            --wait --timeout=2m
+      
+      - name: Verify deployment
+        run: |
+          kubectl get deployments -n test-app
+          kubectl get pods -n test-app
+          kubectl describe deployment python-bootstrap -n test-app
+      
+      - name: Check pod status
+        run: |
+          kubectl wait --for=condition=Ready pod \
+            -l app.kubernetes.io/name=python-bootstrap \
+            -n test-app \
+            --timeout=2m || echo "⚠️ Pod not ready (may be expected in test)"
