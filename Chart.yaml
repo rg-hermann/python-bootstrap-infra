@@ -7,5 +7,5 @@ appVersion: "1.0.1"
 
 dependencies:
   - name: k8s-helm-templates
-    version: "0.0.3"
+    version: 0.0.4
     repository: "https://rg-hermann.github.io/k8s-helm-templates/"
