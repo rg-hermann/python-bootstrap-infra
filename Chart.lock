@@ -1,6 +1,6 @@
 dependencies:
 - name: k8s-helm-templates
   repository: https://rg-hermann.github.io/k8s-helm-templates/
-  version: 0.0.4
-digest: sha256:3b0dac4b38e1c819132a74edacd44a0f12fcce6d22fc6ba944ac59e9ca82187e
-generated: "2026-05-29T01:17:56.378976824Z"
+  version: 0.0.6
+digest: sha256:3388fafe89ae313b9090a381f8a04389ac6bdad7bc962c74410f35cc4e72890a
+generated: "2026-07-24T01:13:27.675513672Z"
